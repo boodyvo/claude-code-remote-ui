@@ -42,7 +42,7 @@ RUN mkdir -p /home/app/.claude /app/workspace /app/data && \
 USER app
 EXPOSE 3000
 ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
+ENV HOST=0.0.0.0
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=5 \
   CMD wget -qO- http://localhost:3000/api/health || exit 1
