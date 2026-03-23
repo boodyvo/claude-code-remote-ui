@@ -42,6 +42,14 @@
     "ws": "^8.19.0",
     "zustand": "^5.0.0"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "argon2",
+      "better-sqlite3",
+      "esbuild",
+      "sharp"
+    ]
+  },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.1.0",
