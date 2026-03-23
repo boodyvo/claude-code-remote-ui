@@ -47,4 +47,4 @@ ENV HOSTNAME=0.0.0.0
 HEALTHCHECK --interval=30s --timeout=10s --start-period=600s --retries=5 \
   CMD wget -qO- http://localhost:3000/api/health || exit 1
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "HOSTNAME=0.0.0.0 exec node server.js"]
