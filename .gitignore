@@ -1,0 +1,57 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# next.js
+.next/
+out/
+
+# build
+dist/
+build/
+
+# env
+.env
+.env.*
+!.env.example
+
+# data
+data/
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# testing
+coverage/
+test-results/
+playwright-report/
+
+# editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# os
+.DS_Store
+Thumbs.db
+
+# hooks venv/cache
+.claude/hooks/node_modules/
+.claude/hooks/package-lock.json
+
+# claude agent skill lockfile
+skills-lock.json
+
+# agent scaffolding (duplicates of .claude/skills)
+.agent/
+.agents/

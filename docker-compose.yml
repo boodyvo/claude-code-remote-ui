@@ -1,0 +1,30 @@
+services:
+  connector:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      # Mount host Claude credentials so the SDK can use your subscription
+      - ${HOME}/.claude:/home/app/.claude
+      - workspace:/app/workspace
+      - app_data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - SESSION_SECRET=${SESSION_SECRET}
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY:-}
+      - CLAUDE_CWD=/app/workspace
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
+      - DATABASE_PATH=/app/data/connector.db
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+volumes:
+  workspace:
+  app_data:

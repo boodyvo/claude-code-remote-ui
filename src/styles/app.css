@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* ── Core (shadcn compatible) ── */
+  --color-background: #ffffff;
+  --color-foreground: #1a1a2e;
+  --color-primary: #6d28d9;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #1a1a2e;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #1a1a2e;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #6d28d9;
+
+  /* ── Surfaces ── */
+  --color-card: #ffffff;
+  --color-card-foreground: #1a1a2e;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1a1a2e;
+
+  /* ── Chat-specific ── */
+  --color-user-bubble: #6d28d9;
+  --color-user-bubble-foreground: #ffffff;
+  --color-assistant-bg: #f8fafc;
+  --color-thinking: #fef3c7;
+  --color-tool-bg: #f0f9ff;
+  --color-diff-add: #dcfce7;
+  --color-diff-remove: #fee2e2;
+  --color-terminal-bg: #1e1e1e;
+  --color-sidebar: #f8fafc;
+  --color-sidebar-active: #ede9fe;
+
+  /* ── Typography ── */
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), "Fira Code", ui-monospace, monospace;
+
+  /* ── Spacing / Radius ── */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+/* ── Dark Theme ── */
+@variant dark {
+  :root {
+    --color-background: #0b0e14;
+    --color-foreground: #e2e8f0;
+    --color-primary: #8b5cf6;
+    --color-primary-foreground: #ffffff;
+    --color-secondary: #1e293b;
+    --color-secondary-foreground: #e2e8f0;
+    --color-muted: #1e293b;
+    --color-muted-foreground: #94a3b8;
+    --color-accent: #1e293b;
+    --color-accent-foreground: #e2e8f0;
+    --color-destructive: #dc2626;
+    --color-destructive-foreground: #ffffff;
+    --color-border: #1e293b;
+    --color-input: #1e293b;
+    --color-ring: #8b5cf6;
+    --color-card: #111827;
+    --color-card-foreground: #e2e8f0;
+    --color-popover: #111827;
+    --color-popover-foreground: #e2e8f0;
+    --color-user-bubble: #7c3aed;
+    --color-user-bubble-foreground: #ffffff;
+    --color-assistant-bg: #111827;
+    --color-thinking: #451a03;
+    --color-tool-bg: #0c1929;
+    --color-sidebar: #0f1419;
+    --color-sidebar-active: #1e1b4b;
+  }
+}
+
+/* ── Base ── */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-muted-foreground);
+  border-radius: 3px;
+  opacity: 0.3;
+}
+::-webkit-scrollbar-thumb:hover {
+  opacity: 0.5;
+}
+
+/* ── Code ── */
+code, pre, kbd {
+  font-family: var(--font-mono);
+}
+
+pre {
+  font-size: clamp(12px, 3.5vw, 14px);
+}
+
+/* ── Prose overrides for chat ── */
+.prose {
+  --tw-prose-body: var(--color-foreground);
+  --tw-prose-headings: var(--color-foreground);
+  --tw-prose-code: var(--color-foreground);
+  --tw-prose-links: var(--color-primary);
+}
+
+/* ── Selection ── */
+::selection {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* ── Focus ring ── */
+:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* ── Smooth transitions ── */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
