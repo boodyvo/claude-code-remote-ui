@@ -48,6 +48,7 @@ Thumbs.db
 # hooks venv/cache
 .claude/hooks/node_modules/
 .claude/hooks/package-lock.json
+.claude/settings.local.json
 
 # claude agent skill lockfile
 skills-lock.json
