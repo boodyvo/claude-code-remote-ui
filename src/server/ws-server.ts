@@ -4,6 +4,7 @@ import type { Server } from "node:http";
 import type { Duplex } from "node:stream";
 import { verifySessionToken } from "./auth";
 import type { ClientMessage, ServerMessage } from "@/lib/types";
+import { handleShellMessage, cleanupShell } from "./shell-handler";
 
 interface ConnectedClient {
   ws: WebSocket;
@@ -76,10 +77,15 @@ export function setupWebSocket(server: Server) {
     maxPayload: 1024 * 1024, // 1MB max message size
   });
 
+  const shellWss = new WebSocketServer({
+    noServer: true,
+    maxPayload: 64 * 1024,
+  });
+
   server.on("upgrade", (req: IncomingMessage, socket: Duplex, head: Buffer) => {
-    // Only handle WebSocket upgrade for our path
     const url = new URL(req.url || "/", `http://${req.headers.host}`);
-    if (url.pathname !== "/ws") {
+
+    if (url.pathname !== "/ws" && url.pathname !== "/shell") {
       socket.destroy();
       return;
     }
@@ -103,12 +109,22 @@ export function setupWebSocket(server: Server) {
     const origin = req.headers.origin;
     const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").filter(Boolean) || [];
     if (allowedOrigins.length > 0) {
-      // When ALLOWED_ORIGINS is set, enforce it strictly
       if (!origin || !allowedOrigins.includes(origin)) {
         socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
         socket.destroy();
         return;
       }
+    }
+
+    if (url.pathname === "/shell") {
+      shellWss.handleUpgrade(req, socket, head, (ws) => {
+        ws.on("message", (raw) => {
+          handleShellMessage(ws, raw.toString());
+        });
+        ws.on("close", () => cleanupShell(ws));
+        ws.on("error", () => cleanupShell(ws));
+      });
+      return;
     }
 
     wss.handleUpgrade(req, socket, head, (ws) => {

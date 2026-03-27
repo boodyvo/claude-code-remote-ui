@@ -7,6 +7,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { SessionSidebar } from "@/components/session/session-sidebar";
 import { MessageStream } from "@/components/chat/message-stream";
 import { InputBar } from "@/components/chat/input-bar";
+import { AuthOverlay } from "@/components/auth/auth-overlay";
 
 export default function Home() {
   useWsConnection();
@@ -14,6 +15,7 @@ export default function Home() {
 
   return (
     <div className="flex h-dvh">
+      <AuthOverlay />
       <SessionSidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar />

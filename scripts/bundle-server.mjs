@@ -11,6 +11,7 @@ await build({
     "next",
     "better-sqlite3",
     "argon2",
+    "node-pty",
   ],
   alias: {
     "@/*": "./src/*",
