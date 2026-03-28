@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createServer, type Server } from "node:http";
 import { WebSocket } from "ws";
 import { setupWebSocket, onMessage } from "./ws-server";
-import { createSessionToken } from "./auth";
+import { createWsToken } from "./auth";
 import type { ServerMessage } from "@/lib/types";
 
 /**
@@ -14,7 +14,7 @@ let server: Server;
 let port: number;
 
 function connectWs(): Promise<WebSocket> {
-  const token = createSessionToken(1);
+  const token = createWsToken(1);
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(
       `ws://127.0.0.1:${port}/ws?token=${encodeURIComponent(token)}`,

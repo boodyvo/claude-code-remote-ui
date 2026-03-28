@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { createServer, type Server } from "node:http";
 import { WebSocket } from "ws";
 import { setupWebSocket } from "./ws-server";
-import { createSessionToken } from "./auth";
+import { createWsToken } from "./auth";
 
 let server: Server;
 let port: number;
@@ -52,14 +52,14 @@ describe("ws-server", () => {
   });
 
   it("accepts connection with valid JWT", async () => {
-    const token = createSessionToken(1);
+    const token = createWsToken(1);
     const ws = await connectWs(token);
     expect(ws.readyState).toBe(WebSocket.OPEN);
     ws.close();
   });
 
   it("responds to ping with pong", async () => {
-    const token = createSessionToken(1);
+    const token = createWsToken(1);
     const ws = await connectWs(token);
     const msgPromise = waitForMessage(ws);
     ws.send(JSON.stringify({ type: "ping" }));
@@ -69,7 +69,7 @@ describe("ws-server", () => {
   });
 
   it("returns error for invalid JSON", async () => {
-    const token = createSessionToken(1);
+    const token = createWsToken(1);
     const ws = await connectWs(token);
     const msgPromise = waitForMessage(ws);
     ws.send("not json");
@@ -81,7 +81,7 @@ describe("ws-server", () => {
   it("rejects upgrade on non-/ws path", async () => {
     await expect(
       new Promise<WebSocket>((resolve, reject) => {
-        const token = createSessionToken(1);
+        const token = createWsToken(1);
         const ws = new WebSocket(`ws://127.0.0.1:${port}/other?token=${token}`);
         ws.on("open", () => resolve(ws));
         ws.on("error", reject);

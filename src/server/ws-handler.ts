@@ -44,7 +44,7 @@ export function handleClientMessage(
       break;
 
     case "tool_response":
-      handleToolResponse(message.toolUseId, message.decision, message.updatedInput);
+      handleToolResponse(client, message.toolUseId, message.decision, message.updatedInput);
       break;
 
     case "set_permission_mode":
@@ -168,24 +168,17 @@ function handleInterrupt(client: ConnectedClient): void {
 }
 
 function handleToolResponse(
+  client: ConnectedClient,
   toolUseId: string,
   decision: "allow" | "deny",
   updatedInput?: unknown,
 ): void {
-  // Find which session has this pending tool approval
-  // The tool response includes toolUseId which is globally unique
-  // We broadcast to the session manager — it checks all sessions
-  // For simplicity, we iterate. In practice there's usually one active session.
-  const input = updatedInput as Record<string, unknown> | undefined;
+  // SECURITY: Only resolve for the requesting client's own session
+  const sessionId = clientSessionMap.get(client.ws);
+  if (!sessionId || !sessionManager.isActive(sessionId)) return;
 
-  // We need to find the session. Since toolUseId is unique, check all active sessions.
-  // The session manager handles this internally.
-  // We need the sessionId — get it from the client's current session.
-  for (const [ws, sid] of clientSessionMap) {
-    if (sessionManager.isActive(sid)) {
-      sessionManager.resolveToolApproval(sid, toolUseId, decision, input);
-    }
-  }
+  const input = updatedInput as Record<string, unknown> | undefined;
+  sessionManager.resolveToolApproval(sessionId, toolUseId, decision, input);
 }
 
 async function handleSetPermissionMode(

@@ -2,7 +2,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import type { IncomingMessage } from "node:http";
 import type { Server } from "node:http";
 import type { Duplex } from "node:stream";
-import { verifySessionToken } from "./auth";
+import { verifyWsToken } from "./auth";
 import type { ClientMessage, ServerMessage } from "@/lib/types";
 import { handleShellMessage, cleanupShell } from "./shell-handler";
 
@@ -10,6 +10,23 @@ interface ConnectedClient {
   ws: WebSocket;
   userId: number;
   lastPing: number;
+}
+
+// ── Per-connection rate limiting ──
+const MSG_RATE_LIMIT = 30; // max messages per window
+const MSG_RATE_WINDOW = 1000; // 1 second window
+const rateLimitState = new Map<WebSocket, { count: number; resetAt: number }>();
+
+function checkWsRateLimit(ws: WebSocket): boolean {
+  const now = Date.now();
+  const state = rateLimitState.get(ws);
+  if (!state || now > state.resetAt) {
+    rateLimitState.set(ws, { count: 1, resetAt: now + MSG_RATE_WINDOW });
+    return true;
+  }
+  if (state.count >= MSG_RATE_LIMIT) return false;
+  state.count++;
+  return true;
 }
 
 const clients = new Map<WebSocket, ConnectedClient>();
@@ -40,6 +57,11 @@ function handleConnection(ws: WebSocket, userId: number) {
   clients.set(ws, client);
 
   ws.on("message", (raw, isBinary) => {
+    if (!checkWsRateLimit(ws)) {
+      sendTo(ws, { type: "error", error: "Rate limit exceeded" });
+      return;
+    }
+
     try {
       if (isBinary) {
         // Binary data = audio chunk
@@ -64,10 +86,12 @@ function handleConnection(ws: WebSocket, userId: number) {
 
   ws.on("close", () => {
     clients.delete(ws);
+    rateLimitState.delete(ws);
   });
 
   ws.on("error", () => {
     clients.delete(ws);
+    rateLimitState.delete(ws);
   });
 }
 
@@ -98,7 +122,7 @@ export function setupWebSocket(server: Server) {
       return;
     }
 
-    const payload = verifySessionToken(token);
+    const payload = verifyWsToken(token);
     if (!payload) {
       socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
       socket.destroy();
@@ -119,10 +143,11 @@ export function setupWebSocket(server: Server) {
     if (url.pathname === "/shell") {
       shellWss.handleUpgrade(req, socket, head, (ws) => {
         ws.on("message", (raw) => {
+          if (!checkWsRateLimit(ws)) return;
           handleShellMessage(ws, raw.toString());
         });
-        ws.on("close", () => cleanupShell(ws));
-        ws.on("error", () => cleanupShell(ws));
+        ws.on("close", () => { cleanupShell(ws); rateLimitState.delete(ws); });
+        ws.on("error", () => { cleanupShell(ws); rateLimitState.delete(ws); });
       });
       return;
     }
@@ -139,6 +164,7 @@ export function setupWebSocket(server: Server) {
       if (now - client.lastPing > 60_000) {
         ws.terminate();
         clients.delete(ws);
+        rateLimitState.delete(ws);
       }
     }
   }, 30_000);

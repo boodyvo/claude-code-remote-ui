@@ -19,7 +19,7 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
       - DATABASE_PATH=/app/data/connector.db
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
       interval: 30s
       timeout: 5s
       start_period: 10s

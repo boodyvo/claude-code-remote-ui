@@ -45,6 +45,17 @@ export function verifySessionToken(token: string): { userId: number } | null {
   }
 }
 
+/** Verify a short-lived WS token — requires purpose: "ws" */
+export function verifyWsToken(token: string): { userId: number } | null {
+  try {
+    const payload = jwt.verify(token, SECRET) as { userId: number; purpose?: string };
+    if (payload.purpose !== "ws") return null;
+    return { userId: payload.userId };
+  } catch {
+    return null;
+  }
+}
+
 const isProduction = process.env.NODE_ENV === "production";
 
 export function buildSessionCookie(token: string): string {

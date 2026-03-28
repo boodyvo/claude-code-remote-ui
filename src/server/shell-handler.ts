@@ -32,7 +32,8 @@ export function handleShellMessage(
 
   switch (msg.type) {
     case "init":
-      startShell(ws, msg.command || "claude /login", msg.cols || 80, msg.rows || 24);
+      // SECURITY: Only allow "claude /login" — ignore client-supplied command
+      startShell(ws, msg.cols || 80, msg.rows || 24);
       break;
     case "input":
       writeToShell(ws, msg.data || "");
@@ -43,14 +44,12 @@ export function handleShellMessage(
   }
 }
 
-function startShell(ws: WebSocket, command: string, cols: number, rows: number): void {
+function startShell(ws: WebSocket, cols: number, rows: number): void {
   // Kill existing session
   cleanupShell(ws);
 
-  const args = command.split(" ");
-  const cmd = args.shift()!;
-
-  const ptyProcess = pty.spawn(cmd, args, {
+  // SECURITY: Hardcoded command — never accept from client
+  const ptyProcess = pty.spawn("claude", ["/login"], {
     name: "xterm-256color",
     cols,
     rows,
