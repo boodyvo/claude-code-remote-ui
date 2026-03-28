@@ -53,6 +53,12 @@ function handleServerMessage(msg: ServerMessage) {
     case "session_ended":
       if (store.activeSessionId === msg.sessionId) {
         store.setIsStreaming(false);
+        if (msg.reason && msg.reason !== "completed") {
+          store.addMessage(msg.sessionId, {
+            type: "assistant",
+            content: [{ type: "text", text: `Session ended: ${msg.reason}` }],
+          });
+        }
       }
       break;
 

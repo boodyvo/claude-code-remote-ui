@@ -74,6 +74,7 @@ export class SessionManager {
     };
 
     this.activeSessions.set(sessionId, session);
+    console.log(`[Session ${sessionId}] Started in ${cwd}`);
     this.consumeStream(sessionId, q);
 
     return sessionId;
@@ -248,6 +249,7 @@ export class SessionManager {
     } catch (err) {
       const reason =
         err instanceof Error ? err.message : "Unknown error";
+      console.error(`[Session ${sessionId}] Error:`, err);
       this.onSessionEndCallback?.(sessionId, reason);
     } finally {
       this.cleanupSession(sessionId);
