@@ -87,7 +87,9 @@ function startShell(ws: WebSocket, cols: number, rows: number): void {
     const hasKeyword = AUTH_TRIGGER_KEYWORDS.some((kw) => lowerClean.includes(kw));
 
     if (hasKeyword) {
-      const urls = clean.match(URL_REGEX);
+      // Strip newlines/carriage returns so wrapped URLs are joined into one
+      const joined = clean.replace(/[\r\n]+/g, "");
+      const urls = joined.match(URL_REGEX);
       if (urls) {
         for (const url of urls) {
           if (!session.announcedUrls.has(url)) {
