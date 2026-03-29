@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const config: NextConfig = {
   output: "standalone",
-  serverExternalPackages: ["better-sqlite3", "argon2", "node-pty"],
+  serverExternalPackages: ["better-sqlite3", "argon2", "node-pty", "@anthropic-ai/claude-agent-sdk"],
   async headers() {
     return [
       {

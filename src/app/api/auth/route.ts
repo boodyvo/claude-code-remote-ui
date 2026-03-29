@@ -12,7 +12,12 @@ import {
 // POST /api/auth — login or setup
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") || "unknown";
-  const body = await request.json();
+  let body: { action?: string; password?: string; confirmPassword?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 });
+  }
   const { action, password, confirmPassword } = body;
 
   // ── Setup: create initial user ──
@@ -52,7 +57,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No user configured" }, { status: 400 });
     }
 
-    const valid = await verifyPassword(hash, password);
+    const valid = await verifyPassword(hash, password || "");
     if (!valid) {
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
