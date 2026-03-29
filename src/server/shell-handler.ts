@@ -9,6 +9,15 @@ const AUTH_TRIGGER_KEYWORDS = [
   "continue in your browser",
   "open_url:",
   "authorize",
+  "press enter to open",
+];
+
+const LOGIN_SUCCESS_KEYWORDS = [
+  "successfully authenticated",
+  "logged in",
+  "authentication successful",
+  "successfully logged in",
+  "login successful",
 ];
 
 interface ShellSession {
@@ -73,9 +82,14 @@ function startShell(ws: WebSocket, cols: number, rows: number): void {
 
   let urlBuffer = "";
 
+  let loginCompleted = false;
+
   ptyProcess.onData((data: string) => {
     // Send terminal output to client
     sendShellMessage(ws, { type: "output", data });
+
+    // Don't process if login already completed
+    if (loginCompleted) return;
 
     // Detect auth URLs in output
     urlBuffer += data;
@@ -86,6 +100,19 @@ function startShell(ws: WebSocket, cols: number, rows: number): void {
 
     const clean = urlBuffer.replace(ANSI_REGEX, "");
     const lowerClean = clean.toLowerCase();
+
+    // Check for login success — kill PTY to prevent interactive mode loop
+    if (LOGIN_SUCCESS_KEYWORDS.some((kw) => lowerClean.includes(kw))) {
+      loginCompleted = true;
+      // Give a moment for remaining output, then kill the process
+      setTimeout(() => {
+        sendShellMessage(ws, { type: "exit", exitCode: 0 });
+        try { ptyProcess.kill(); } catch { /* already dead */ }
+        shellSessions.delete(ws);
+      }, 1500);
+      return;
+    }
+
     const hasKeyword = AUTH_TRIGGER_KEYWORDS.some((kw) => lowerClean.includes(kw));
 
     if (hasKeyword) {
@@ -104,7 +131,9 @@ function startShell(ws: WebSocket, cols: number, rows: number): void {
   });
 
   ptyProcess.onExit(({ exitCode }) => {
-    sendShellMessage(ws, { type: "exit", exitCode });
+    if (!loginCompleted) {
+      sendShellMessage(ws, { type: "exit", exitCode });
+    }
     shellSessions.delete(ws);
   });
 }

@@ -49,21 +49,24 @@ export class SessionManager {
 
     const messageGenerator = this.createMessageGenerator(messageQueue);
 
+    // Generate session ID before creating query so canUseTool closure captures it
+    const sessionId = crypto.randomUUID();
+
     const q = sdkQuery({
       prompt: messageGenerator,
       options: {
         cwd,
+        tools: { type: "preset", preset: "claude_code" },
+        systemPrompt: { type: "preset", preset: "claude_code" },
+        settingSources: ["project", "user", "local"],
         persistSession: true,
         includePartialMessages: true,
         abortController,
+        stderr: (data: string) => console.error(`[Session ${sessionId}] stderr:`, data),
         canUseTool: (toolName, input, opts) =>
           this.handleToolApproval(sessionId, toolName, input, opts.toolUseID),
       },
     });
-
-    // We need to get the session ID from the init message.
-    // For now, generate a temporary one and update when we get init.
-    const sessionId = crypto.randomUUID();
 
     const session: ActiveSession = {
       sessionId,
@@ -90,6 +93,9 @@ export class SessionManager {
       options: {
         cwd,
         resume: sessionId,
+        tools: { type: "preset", preset: "claude_code" },
+        systemPrompt: { type: "preset", preset: "claude_code" },
+        settingSources: ["project", "user", "local"],
         persistSession: true,
         includePartialMessages: true,
         abortController,
@@ -126,6 +132,9 @@ export class SessionManager {
         resume: parentSessionId,
         forkSession: true,
         sessionId: newSessionId,
+        tools: { type: "preset", preset: "claude_code" },
+        systemPrompt: { type: "preset", preset: "claude_code" },
+        settingSources: ["project", "user", "local"],
         persistSession: true,
         includePartialMessages: true,
         abortController,
