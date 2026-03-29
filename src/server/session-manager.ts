@@ -271,26 +271,11 @@ export class SessionManager {
     _input: Record<string, unknown>,
     toolUseId: string,
   ): Promise<PermissionResult> {
-    const session = this.activeSessions.get(sessionId);
-    if (!session) {
-      return Promise.resolve({
-        behavior: "deny" as const,
-        message: "Session not found",
-        toolUseID: toolUseId,
-      });
-    }
-
-    return new Promise<PermissionResult>((resolve) => {
-      const timer = setTimeout(() => {
-        session.pendingToolApprovals.delete(toolUseId);
-        resolve({
-          behavior: "deny" as const,
-          message: "Tool approval timed out",
-          toolUseID: toolUseId,
-        });
-      }, TOOL_APPROVAL_TIMEOUT_MS);
-
-      session.pendingToolApprovals.set(toolUseId, { resolve, timer });
+    // Auto-approve all tools — this connector runs in a sandboxed container
+    // with --dangerously-skip-permissions equivalent behavior
+    return Promise.resolve({
+      behavior: "allow" as const,
+      toolUseID: toolUseId,
     });
   }
 
