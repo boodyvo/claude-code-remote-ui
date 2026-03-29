@@ -49,8 +49,8 @@ function startShell(ws: WebSocket, cols: number, rows: number): void {
   cleanupShell(ws);
 
   // SECURITY: Hardcoded command — never accept from client
-  // Use bash -c wrapper and --dangerously-skip-permissions to prevent permission prompts
-  const ptyProcess = pty.spawn("bash", ["-c", "claude --dangerously-skip-permissions /login"], {
+  // --dangerously-skip-permissions prevents permission prompts during login
+  const ptyProcess = pty.spawn("claude", ["--dangerously-skip-permissions", "/login"], {
     name: "xterm-256color",
     cols,
     rows,
