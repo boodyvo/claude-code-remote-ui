@@ -49,7 +49,8 @@ function startShell(ws: WebSocket, cols: number, rows: number): void {
   cleanupShell(ws);
 
   // SECURITY: Hardcoded command — never accept from client
-  const ptyProcess = pty.spawn("claude", ["/login"], {
+  // Use bash -c wrapper and --dangerously-skip-permissions to prevent permission prompts
+  const ptyProcess = pty.spawn("bash", ["-c", "claude --dangerously-skip-permissions /login"], {
     name: "xterm-256color",
     cols,
     rows,
@@ -58,6 +59,7 @@ function startShell(ws: WebSocket, cols: number, rows: number): void {
       ...process.env,
       TERM: "xterm-256color",
       COLORTERM: "truecolor",
+      FORCE_COLOR: "3",
     } as Record<string, string>,
   });
 

@@ -19,12 +19,33 @@ export async function GET() {
     if (existsSync(credentialsPath)) {
       try {
         const creds = JSON.parse(readFileSync(credentialsPath, "utf-8"));
-        if (creds.claudeAiOauth?.accessToken || creds.oauthAccessToken) {
+        const oauth = creds.claudeAiOauth;
+        if (oauth?.accessToken) {
+          // Check if token is expired
+          const isExpired = oauth.expiresAt && Date.now() >= oauth.expiresAt;
+          if (!isExpired) {
+            return NextResponse.json({ authenticated: true, method: "oauth" });
+          }
+        }
+        if (creds.oauthAccessToken) {
           return NextResponse.json({ authenticated: true, method: "oauth" });
         }
       } catch {
         // Invalid credentials file
       }
+    }
+  }
+
+  // Also check settings.json for env-based auth tokens
+  const settingsPath = join(homedir(), ".claude", "settings.json");
+  if (existsSync(settingsPath)) {
+    try {
+      const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
+      if (settings.env?.ANTHROPIC_API_KEY || settings.env?.ANTHROPIC_AUTH_TOKEN) {
+        return NextResponse.json({ authenticated: true, method: "settings_env" });
+      }
+    } catch {
+      // Invalid settings file
     }
   }
 

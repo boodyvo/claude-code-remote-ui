@@ -113,8 +113,22 @@ export function TerminalLogin({ onComplete, onClose }: TerminalLoginProps) {
             if (msg.url) setAuthUrl(msg.url);
             break;
           case "exit":
-            term.write("\r\n\x1b[32mAuthentication complete.\x1b[0m\r\n");
-            setTimeout(onComplete, 1500);
+            // Re-verify auth status instead of blindly assuming success
+            if (msg.exitCode === 0) {
+              term.write("\r\n\x1b[32mLogin process finished. Verifying...\x1b[0m\r\n");
+              fetch("/api/claude-auth").then(r => r.json()).then(data => {
+                if (data.authenticated) {
+                  term.write("\x1b[32mAuthentication verified!\x1b[0m\r\n");
+                  setTimeout(onComplete, 1000);
+                } else {
+                  term.write("\x1b[33mLogin process exited but credentials not found. You may need to try again.\x1b[0m\r\n");
+                }
+              }).catch(() => {
+                term.write("\x1b[31mFailed to verify authentication.\x1b[0m\r\n");
+              });
+            } else {
+              term.write(`\r\n\x1b[31mLogin process exited with code ${msg.exitCode}.\x1b[0m\r\n`);
+            }
             break;
         }
       };
