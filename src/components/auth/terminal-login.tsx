@@ -28,6 +28,26 @@ export function TerminalLogin({ onComplete, onClose }: TerminalLoginProps) {
     setTimeout(() => setCopied(false), 2000);
   }, [authUrl]);
 
+  // Poll for auth status while the terminal is open — catches successful login
+  // even if keyword detection or exit handling fails
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/claude-auth");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated) {
+            clearInterval(interval);
+            onComplete();
+          }
+        }
+      } catch {
+        // Ignore polling errors
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [onComplete]);
+
   useEffect(() => {
     if (!termRef.current) return;
 

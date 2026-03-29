@@ -12,6 +12,7 @@ await build({
     "better-sqlite3",
     "argon2",
     "node-pty",
+    "@anthropic-ai/claude-agent-sdk",
   ],
   alias: {
     "@/*": "./src/*",

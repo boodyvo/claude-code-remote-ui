@@ -1,6 +1,8 @@
 import * as pty from "node-pty";
 import type { WebSocket } from "ws";
 
+// Match URLs but stop at characters that signal end-of-URL (uppercase letter
+// after a non-percent-encoded segment typically means trailing prose got joined)
 const URL_REGEX = /https?:\/\/[^\s\])"'>]+/g;
 const ANSI_REGEX = /\x1b\[[0-9;]*[a-zA-Z]/g;
 const AUTH_TRIGGER_KEYWORDS = [
@@ -116,15 +118,31 @@ function startShell(ws: WebSocket, cols: number, rows: number): void {
     const hasKeyword = AUTH_TRIGGER_KEYWORDS.some((kw) => lowerClean.includes(kw));
 
     if (hasKeyword) {
-      // Strip newlines/carriage returns so wrapped URLs are joined into one
-      const joined = clean.replace(/[\r\n]+/g, "");
-      const urls = joined.match(URL_REGEX);
-      if (urls) {
-        for (const url of urls) {
-          if (!session.announcedUrls.has(url)) {
-            session.announcedUrls.add(url);
-            sendShellMessage(ws, { type: "auth_url", url });
+      // Extract URLs that may be wrapped across multiple terminal lines.
+      // Strategy: split into lines, find URL starts, then greedily consume
+      // continuation lines that look like URL fragments (start with URL-safe chars).
+      const lines = clean.split(/[\r\n]+/).filter(l => l.trim());
+      const extractedUrls: string[] = [];
+      for (let i = 0; i < lines.length; i++) {
+        const match = lines[i].match(/https?:\/\/[^\s\])"'>]+/);
+        if (match) {
+          let url = match[0];
+          // Consume continuation lines that start with URL-safe characters
+          // (no leading space, letter-word, or prompt characters)
+          for (let j = i + 1; j < lines.length; j++) {
+            const trimmed = lines[j].trim();
+            // Stop if line looks like prose (starts with a word) or a prompt
+            if (/^[A-Z][a-z]/.test(trimmed) || /^[>$#]/.test(trimmed) || trimmed === "") break;
+            url += trimmed.replace(/[^\w%&=\-_.~+\/:?#@!$'()*,;[\]]/g, "");
+            i = j;
           }
+          extractedUrls.push(url);
+        }
+      }
+      for (const url of extractedUrls) {
+        if (!session.announcedUrls.has(url)) {
+          session.announcedUrls.add(url);
+          sendShellMessage(ws, { type: "auth_url", url });
         }
       }
     }
