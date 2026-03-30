@@ -59,12 +59,12 @@ export class SessionManager {
         tools: { type: "preset", preset: "claude_code" },
         systemPrompt: { type: "preset", preset: "claude_code" },
         settingSources: ["project", "user", "local"],
+        permissionMode: "bypassPermissions",
+        allowDangerouslySkipPermissions: true,
         persistSession: true,
         includePartialMessages: true,
         abortController,
         stderr: (data: string) => console.error(`[Session ${sessionId}] stderr:`, data),
-        canUseTool: (toolName, input, opts) =>
-          this.handleToolApproval(sessionId, toolName, input, opts.toolUseID),
       },
     });
 
@@ -96,11 +96,11 @@ export class SessionManager {
         tools: { type: "preset", preset: "claude_code" },
         systemPrompt: { type: "preset", preset: "claude_code" },
         settingSources: ["project", "user", "local"],
+        permissionMode: "bypassPermissions",
+        allowDangerouslySkipPermissions: true,
         persistSession: true,
         includePartialMessages: true,
         abortController,
-        canUseTool: (toolName, input, opts) =>
-          this.handleToolApproval(sessionId, toolName, input, opts.toolUseID),
       },
     });
 
@@ -135,11 +135,11 @@ export class SessionManager {
         tools: { type: "preset", preset: "claude_code" },
         systemPrompt: { type: "preset", preset: "claude_code" },
         settingSources: ["project", "user", "local"],
+        permissionMode: "bypassPermissions",
+        allowDangerouslySkipPermissions: true,
         persistSession: true,
         includePartialMessages: true,
         abortController,
-        canUseTool: (toolName, input, opts) =>
-          this.handleToolApproval(newSessionId, toolName, input, opts.toolUseID),
       },
     });
 
