@@ -19,6 +19,9 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
+# Install bash (Alpine only has sh) and common tools needed by Claude Code's Bash tool
+RUN apk add --no-cache bash coreutils curl git
+
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code
 

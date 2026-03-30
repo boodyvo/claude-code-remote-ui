@@ -64,6 +64,8 @@ export class SessionManager {
         persistSession: true,
         includePartialMessages: true,
         abortController,
+        canUseTool: (_toolName: string, input: Record<string, unknown>) =>
+          Promise.resolve({ behavior: "allow" as const, updatedInput: input }),
         stderr: (data: string) => console.error(`[Session ${sessionId}] stderr:`, data),
       },
     });
@@ -101,6 +103,8 @@ export class SessionManager {
         persistSession: true,
         includePartialMessages: true,
         abortController,
+        canUseTool: (_toolName: string, input: Record<string, unknown>) =>
+          Promise.resolve({ behavior: "allow" as const, updatedInput: input }),
       },
     });
 
@@ -140,6 +144,8 @@ export class SessionManager {
         persistSession: true,
         includePartialMessages: true,
         abortController,
+        canUseTool: (_toolName: string, input: Record<string, unknown>) =>
+          Promise.resolve({ behavior: "allow" as const, updatedInput: input }),
       },
     });
 
