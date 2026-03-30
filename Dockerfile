@@ -39,9 +39,6 @@ COPY --from=deps /app/node_modules ./node_modules
 RUN mkdir -p /home/app/.claude /app/workspace /app/data && \
     chown -R app:app /home/app/.claude /app/workspace /app/data
 
-# Persist data across container restarts/deploys
-VOLUME ["/app/data", "/home/app/.claude"]
-
 USER app
 EXPOSE 3000
 ENV PORT=3000
