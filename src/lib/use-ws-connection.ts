@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { wsClient } from "./ws-client";
 import { useAppStore } from "./store";
 import type { ServerMessage } from "./types";
@@ -54,6 +55,7 @@ function handleServerMessage(msg: ServerMessage) {
       if (store.activeSessionId === msg.sessionId) {
         store.setIsStreaming(false);
         if (msg.reason && msg.reason !== "completed") {
+          toast.error(`Session ended: ${msg.reason}`);
           store.addMessage(msg.sessionId, {
             type: "assistant",
             content: [{ type: "text", text: `Session ended: ${msg.reason}` }],
@@ -90,16 +92,18 @@ function handleServerMessage(msg: ServerMessage) {
 
     case "transcript_error":
       console.error("[Transcript Error]", msg.error);
+      toast.error(`Voice transcription error: ${msg.error}`);
       store.setRecording(false);
       break;
 
     case "error":
       console.error("[WS Error]", msg.error);
+      toast.error(msg.error);
       // Add error as a system message to the active session so it's visible
       if (store.activeSessionId) {
         store.addMessage(store.activeSessionId, {
           type: "assistant",
-          content: [{ type: "text", text: `⚠️ Error: ${msg.error}` }],
+          content: [{ type: "text", text: `Error: ${msg.error}` }],
         });
       }
       break;

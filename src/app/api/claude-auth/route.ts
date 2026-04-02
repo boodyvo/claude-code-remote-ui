@@ -26,6 +26,10 @@ export async function GET() {
           if (!isExpired) {
             return NextResponse.json({ authenticated: true, method: "oauth" });
           }
+          // Token expired but refresh token exists — CLI can auto-refresh
+          if (oauth.refreshToken) {
+            return NextResponse.json({ authenticated: true, method: "oauth_refreshable" });
+          }
         }
         if (creds.oauthAccessToken) {
           return NextResponse.json({ authenticated: true, method: "oauth" });

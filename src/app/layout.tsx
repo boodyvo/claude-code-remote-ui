@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 import "@/styles/app.css";
 
 const inter = Inter({
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
         {children}
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   );
