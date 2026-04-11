@@ -13,7 +13,12 @@ export default defineConfig({
     command: "pnpm dev",
     port: 3000,
     timeout: 30_000,
-    reuseExistingServer: true,
+    reuseExistingServer: !process.env.CI,
+    env: {
+      DATABASE_PATH: process.env.TEST_DATABASE_PATH ?? "/tmp/playwright-connector.db",
+      SESSION_SECRET: "playwright-test-secret",
+      DEEPGRAM_API_KEY: process.env.DEEPGRAM_API_KEY ?? "",
+    },
   },
   projects: [
     {

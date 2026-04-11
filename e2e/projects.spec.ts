@@ -9,35 +9,37 @@ import { test, expect } from "@playwright/test";
 
 const UNIQUE_SUFFIX = Date.now();
 const TEST_PROJECT_NAME = `E2E Test Project ${UNIQUE_SUFFIX}`;
+const TEST_PASSWORD = "PlaywrightTest123!";
 
-async function getAuthCookie(request: import("@playwright/test").APIRequestContext) {
-  // Attempt to get a valid session cookie via the API
-  const res = await request.post("/api/auth", {
-    data: { action: "login", password: process.env.TEST_PASSWORD || "testpassword123" },
+async function ensureAuthCookie(request: import("@playwright/test").APIRequestContext) {
+  // Try login first; if user doesn't exist yet, set up the account
+  let res = await request.post("/api/auth", {
+    data: { action: "login", password: TEST_PASSWORD },
   });
-  if (!res.ok()) return null;
-  const headers = res.headersArray();
-  const setCookie = headers.find((h) => h.name.toLowerCase() === "set-cookie");
-  return setCookie?.value ?? null;
+  if (!res.ok()) {
+    // First run with fresh DB — run setup
+    res = await request.post("/api/auth", {
+      data: { action: "setup", password: TEST_PASSWORD, confirmPassword: TEST_PASSWORD },
+    });
+    if (!res.ok()) throw new Error(`Auth setup failed: ${await res.text()}`);
+    res = await request.post("/api/auth", {
+      data: { action: "login", password: TEST_PASSWORD },
+    });
+    if (!res.ok()) throw new Error(`Auth login failed after setup: ${await res.text()}`);
+  }
+  const setCookie = res.headersArray().find((h) => h.name.toLowerCase() === "set-cookie");
+  if (!setCookie) throw new Error("No session cookie returned from auth");
+  const match = setCookie.value.match(/session=([^;]+)/);
+  if (!match) throw new Error("Could not parse session cookie");
+  return match[1];
 }
 
 test.describe("Projects page", () => {
   test.beforeEach(async ({ page, request }) => {
-    // Try to authenticate; skip gracefully if credentials not configured
-    const cookieHeader = await getAuthCookie(request);
-    if (cookieHeader) {
-      const match = cookieHeader.match(/session=([^;]+)/);
-      if (match) {
-        await page.context().addCookies([
-          {
-            name: "session",
-            value: match[1],
-            domain: "localhost",
-            path: "/",
-          },
-        ]);
-      }
-    }
+    const sessionValue = await ensureAuthCookie(request);
+    await page.context().addCookies([
+      { name: "session", value: sessionValue, domain: "localhost", path: "/" },
+    ]);
   });
 
   test("projects page loads and shows heading", async ({ page }) => {
@@ -45,11 +47,6 @@ test.describe("Projects page", () => {
     await page.waitForTimeout(1000);
 
     // Either we're authenticated and see the page, or redirected to login
-    const url = page.url();
-    if (url.includes("/login") || url.includes("/setup")) {
-      test.skip();
-      return;
-    }
 
     await expect(page.getByText("Projects")).toBeVisible();
     await expect(page.getByRole("button", { name: /new project/i })).toBeVisible();
@@ -58,12 +55,6 @@ test.describe("Projects page", () => {
   test("can create a new project (name only)", async ({ page }) => {
     await page.goto("/projects");
     await page.waitForTimeout(1000);
-
-    const url = page.url();
-    if (url.includes("/login") || url.includes("/setup")) {
-      test.skip();
-      return;
-    }
 
     // Click "New Project"
     await page.getByRole("button", { name: /new project/i }).click();
@@ -87,12 +78,6 @@ test.describe("Projects page", () => {
     await page.goto("/projects");
     await page.waitForTimeout(1000);
 
-    const url = page.url();
-    if (url.includes("/login") || url.includes("/setup")) {
-      test.skip();
-      return;
-    }
-
     // Verify test project already exists from previous test (or create it)
     const projectVisible = await page.getByText(TEST_PROJECT_NAME).isVisible();
     if (!projectVisible) {
@@ -115,12 +100,6 @@ test.describe("Projects page", () => {
   test("Open Session button navigates to main page", async ({ page }) => {
     await page.goto("/projects");
     await page.waitForTimeout(1000);
-
-    const url = page.url();
-    if (url.includes("/login") || url.includes("/setup")) {
-      test.skip();
-      return;
-    }
 
     // Ensure test project exists
     const projectVisible = await page.getByText(TEST_PROJECT_NAME).isVisible();
@@ -152,12 +131,6 @@ test.describe("Projects page", () => {
   test("can delete a project", async ({ page }) => {
     await page.goto("/projects");
     await page.waitForTimeout(1000);
-
-    const url = page.url();
-    if (url.includes("/login") || url.includes("/setup")) {
-      test.skip();
-      return;
-    }
 
     const DELETE_NAME = `Delete Me ${UNIQUE_SUFFIX}`;
 
