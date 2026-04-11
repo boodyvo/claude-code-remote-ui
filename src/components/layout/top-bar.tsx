@@ -1,10 +1,11 @@
 "use client";
 
-import { Menu, Wifi, WifiOff, Loader2, GitFork } from "lucide-react";
+import { Menu, Wifi, WifiOff, Loader2, GitFork, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { wsClient } from "@/lib/ws-client";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export function TopBar() {
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
@@ -37,6 +38,11 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-1.5">
+        <Button variant="ghost" size="icon" className="h-8 w-8" title="Projects" asChild>
+          <Link href="/projects">
+            <FolderOpen className="h-4 w-4" />
+          </Link>
+        </Button>
         {activeSessionId && (
           <Button
             variant="ghost"

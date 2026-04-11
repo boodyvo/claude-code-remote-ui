@@ -39,8 +39,8 @@ COPY --from=builder --chown=app:app /app/.next/static ./.next/static
 COPY --from=deps /app/node_modules ./node_modules
 
 # Data directories
-RUN mkdir -p /home/app/.claude /app/workspace /app/data && \
-    chown -R app:app /home/app/.claude /app/workspace /app/data
+RUN mkdir -p /home/app/.claude /app/workspace /app/data /app/projects && \
+    chown -R app:app /home/app/.claude /app/workspace /app/data /app/projects
 
 USER app
 EXPOSE 3000

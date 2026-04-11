@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
-import { Plus, MessageSquare } from "lucide-react";
+import { useMemo, useState, useCallback, useEffect } from "react";
+import { Plus, MessageSquare, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAppStore } from "@/lib/store";
@@ -9,6 +9,12 @@ import { SessionSearch } from "./session-search";
 import type { SessionInfo } from "@/lib/types";
 import { wsClient } from "@/lib/ws-client";
 import { cn } from "@/lib/utils";
+
+interface Project {
+  id: number;
+  name: string;
+  slug: string;
+}
 
 function groupByDate(sessions: SessionInfo[]): Record<string, SessionInfo[]> {
   const now = new Date();
@@ -49,7 +55,7 @@ function formatTime(dateStr: string): string {
 
 interface SidebarContentProps {
   onSelectSession: (id: string) => void;
-  onNewSession: () => void;
+  onNewSession: (projectId?: number) => void;
 }
 
 function SidebarContent({ onSelectSession, onNewSession }: SidebarContentProps) {
@@ -57,6 +63,16 @@ function SidebarContent({ onSelectSession, onNewSession }: SidebarContentProps) 
   const activeSessionId = useAppStore((s) => s.activeSessionId);
   const connectionState = useAppStore((s) => s.connectionState);
   const [searchQuery, setSearchQuery] = useState("");
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | "">("");
+  const [showProjectSelect, setShowProjectSelect] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/projects")
+      .then((r) => r.json())
+      .then((d) => setProjects(d.projects || []))
+      .catch(() => {});
+  }, []);
 
   const filtered = useMemo(() => {
     if (!searchQuery) return sessions;
@@ -74,15 +90,42 @@ function SidebarContent({ onSelectSession, onNewSession }: SidebarContentProps) 
   return (
     <div className="flex h-full flex-col bg-sidebar">
       <div className="space-y-2 p-3">
-        <Button
-          className="w-full justify-start gap-2"
-          size="sm"
-          onClick={onNewSession}
-          disabled={connectionState !== "connected"}
-        >
-          <Plus className="h-4 w-4" />
-          New Session
-        </Button>
+        <div className="flex gap-1.5">
+          <Button
+            className="flex-1 justify-start gap-2"
+            size="sm"
+            onClick={() => onNewSession(selectedProjectId || undefined)}
+            disabled={connectionState !== "connected"}
+          >
+            <Plus className="h-4 w-4" />
+            New Session
+          </Button>
+          {projects.length > 0 && (
+            <Button
+              size="icon-sm"
+              variant="outline"
+              title="Select project for new session"
+              onClick={() => setShowProjectSelect((v) => !v)}
+              disabled={connectionState !== "connected"}
+            >
+              <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showProjectSelect && "rotate-180")} />
+            </Button>
+          )}
+        </div>
+        {showProjectSelect && projects.length > 0 && (
+          <select
+            className="w-full rounded-md border border-input bg-transparent px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            value={selectedProjectId}
+            onChange={(e) => setSelectedProjectId(e.target.value ? Number(e.target.value) : "")}
+          >
+            <option value="">No project (default workspace)</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        )}
         {sessions.length > 5 && <SessionSearch onSearch={setSearchQuery} />}
       </div>
 
@@ -156,10 +199,13 @@ export function SessionSidebar() {
     [setActiveSessionId, setSidebarOpen],
   );
 
-  const handleNewSession = useCallback(() => {
-    wsClient.send({ type: "new_session", cwd: "" });
-    setSidebarOpen(false);
-  }, [setSidebarOpen]);
+  const handleNewSession = useCallback(
+    (projectId?: number) => {
+      wsClient.send({ type: "new_session", cwd: "", ...(projectId ? { projectId } : {}) });
+      setSidebarOpen(false);
+    },
+    [setSidebarOpen],
+  );
 
   return (
     <>

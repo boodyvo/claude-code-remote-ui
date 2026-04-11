@@ -1,9 +1,15 @@
-import { resolve, relative } from "node:path";
+import { resolve, relative, join } from "node:path";
+import { existsSync } from "node:fs";
 import type { WebSocket } from "ws";
 import type { ClientMessage, ServerMessage } from "@/lib/types";
 import { sessionManager } from "./session-manager";
 import { sendTo } from "./ws-server";
 import { deepgramRelay } from "./deepgram-relay";
+import db from "./db";
+
+const PROJECTS_BASE_DIR =
+  process.env.PROJECTS_BASE_DIR ||
+  (process.env.NODE_ENV === "production" ? "/app/projects" : "./data/projects");
 
 interface ConnectedClient {
   ws: WebSocket;
@@ -20,7 +26,7 @@ export function handleClientMessage(
 ): void {
   switch (message.type) {
     case "new_session":
-      handleNewSession(client, message.cwd, message.name);
+      handleNewSession(client, message.cwd, message.name, message.projectId);
       break;
 
     case "send_message":
@@ -84,19 +90,43 @@ async function handleNewSession(
   client: ConnectedClient,
   cwd: string,
   _name?: string,
+  projectId?: number,
 ): Promise<void> {
   try {
-    // Validate cwd is within DEFAULT_CWD to prevent path traversal
-    const safeCwd = cwd ? resolve(DEFAULT_CWD, cwd) : DEFAULT_CWD;
-    const rel = relative(DEFAULT_CWD, safeCwd);
-    if (rel.startsWith("..")) {
-      sendTo(client.ws, {
-        type: "error",
-        error: "Working directory must be within the workspace",
-      });
-      return;
+    let sessionCwd: string;
+
+    if (projectId) {
+      const project = db
+        .prepare("SELECT * FROM projects WHERE id = ?")
+        .get(projectId) as { slug: string } | undefined;
+      if (!project) {
+        sendTo(client.ws, { type: "error", error: "Project not found" });
+        return;
+      }
+      sessionCwd = join(PROJECTS_BASE_DIR, project.slug);
+      if (!existsSync(sessionCwd)) {
+        sendTo(client.ws, {
+          type: "error",
+          error: "Project directory does not exist. Clone the repository first.",
+        });
+        return;
+      }
+      db.prepare("UPDATE projects SET last_used_at = datetime('now') WHERE id = ?").run(projectId);
+    } else {
+      // Validate cwd is within DEFAULT_CWD to prevent path traversal
+      const safeCwd = cwd ? resolve(DEFAULT_CWD, cwd) : DEFAULT_CWD;
+      const rel = relative(DEFAULT_CWD, safeCwd);
+      if (rel.startsWith("..")) {
+        sendTo(client.ws, {
+          type: "error",
+          error: "Working directory must be within the workspace",
+        });
+        return;
+      }
+      sessionCwd = safeCwd;
     }
-    const sessionId = await sessionManager.startSession(safeCwd);
+
+    const sessionId = await sessionManager.startSession(sessionCwd);
     clientSessionMap.set(client.ws, sessionId);
     sendTo(client.ws, { type: "session_created", sessionId });
   } catch (err) {

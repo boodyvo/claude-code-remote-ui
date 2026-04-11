@@ -8,6 +8,7 @@ services:
     volumes:
       - connector-data:/app/data
       - connector-claude:/home/app/.claude
+      - connector-projects:/app/projects
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -22,3 +23,4 @@ services:
 volumes:
   connector-data:
   connector-claude:
+  connector-projects:

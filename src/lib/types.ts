@@ -77,7 +77,7 @@ export interface ToolApproval {
 
 export type ClientMessage =
   | { type: "send_message"; content: string; sessionId: string }
-  | { type: "new_session"; cwd: string; name?: string }
+  | { type: "new_session"; cwd: string; name?: string; projectId?: number }
   | { type: "resume_session"; sessionId: string }
   | { type: "fork_session"; sessionId: string }
   | { type: "cancel_session"; sessionId: string }
