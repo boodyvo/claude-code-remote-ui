@@ -1,19 +1,24 @@
 # syntax=docker/dockerfile:1.4
+# Use Debian slim (not Alpine) so argon2/better-sqlite3/node-pty can use
+# pre-built binaries instead of compiling from C++ source (which takes ~1h on Alpine).
+
 # ── Stage 1: Dependencies ──
-FROM node:22-alpine AS deps
+FROM node:22-slim AS deps
 WORKDIR /app
-RUN apk add --no-cache python3 make g++
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 COPY package.json pnpm-lock.yaml .npmrc ./
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile --network-concurrency 4
 
 # ── Stage 2: Builder ──
-# Build the Next.js app, then prune devDeps so node_modules only
-# contains production packages before being copied to the runner.
-FROM node:22-alpine AS builder
+FROM node:22-slim AS builder
 WORKDIR /app
-RUN apk add --no-cache python3 make g++
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -21,19 +26,21 @@ RUN pnpm build
 RUN pnpm prune --prod --no-optional
 
 # ── Stage 3: Runner ──
-FROM node:22-alpine AS runner
+FROM node:22-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Install bash (Alpine only has sh) and common tools needed by Claude Code's Bash tool
-RUN apk add --no-cache bash coreutils curl git
+# Install bash and common tools needed by Claude Code's Bash tool
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash curl git wget \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code
 
 # Non-root user
-RUN addgroup --system --gid 1001 app && \
-    adduser --system --uid 1001 --ingroup app app
+RUN groupadd --system --gid 1001 app && \
+    useradd --system --uid 1001 --gid app app
 
 # Copy standalone Next.js build
 COPY --from=builder /app/public ./public
