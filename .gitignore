@@ -56,3 +56,9 @@ skills-lock.json
 # agent scaffolding (duplicates of .claude/skills)
 .agent/
 .agents/
+
+# playwright MCP session logs
+.playwright-mcp/
+
+# claude worktrees (ephemeral agent branches)
+.claude/worktrees/
