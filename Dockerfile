@@ -23,7 +23,7 @@ RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm build
-RUN pnpm prune --prod --no-optional
+RUN pnpm prune --prod
 
 # ── Stage 3: Runner ──
 FROM node:22-slim AS runner
