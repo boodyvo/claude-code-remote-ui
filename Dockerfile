@@ -1,4 +1,4 @@
-# ── Stage 1: Dependencies ──
+# ── Stage 1: All dependencies (needed for build) ──
 FROM node:22-alpine AS deps
 WORKDIR /app
 RUN apk add --no-cache python3 make g++
@@ -6,7 +6,15 @@ RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 COPY package.json pnpm-lock.yaml .npmrc ./
 RUN pnpm install --frozen-lockfile --network-concurrency 4
 
-# ── Stage 2: Builder ──
+# ── Stage 2: Production-only dependencies (for runtime) ──
+FROM node:22-alpine AS prod-deps
+WORKDIR /app
+RUN apk add --no-cache python3 make g++
+RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
+COPY package.json pnpm-lock.yaml .npmrc ./
+RUN pnpm install --frozen-lockfile --prod --network-concurrency 4
+
+# ── Stage 3: Builder ──
 FROM node:22-alpine AS builder
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
@@ -14,7 +22,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm build
 
-# ── Stage 3: Runner ──
+# ── Stage 4: Runner ──
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
@@ -34,9 +42,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=app:app /app/.next/standalone ./
 COPY --from=builder --chown=app:app /app/.next/static ./.next/static
 
-# Overwrite stripped standalone node_modules with full deps for custom server
-# (standalone ships minimal next runtime, but our server.js needs the full package)
-COPY --from=deps /app/node_modules ./node_modules
+# Copy only production node_modules (not devDeps) for native packages
+# (standalone ships minimal next runtime; serverExternalPackages need prod deps)
+COPY --from=prod-deps /app/node_modules ./node_modules
 
 # Data directories
 RUN mkdir -p /home/app/.claude /app/workspace /app/data /app/projects && \
