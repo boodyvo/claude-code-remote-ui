@@ -1,10 +1,12 @@
+# syntax=docker/dockerfile:1.4
 # ── Stage 1: Dependencies ──
 FROM node:22-alpine AS deps
 WORKDIR /app
 RUN apk add --no-cache python3 make g++
 RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 COPY package.json pnpm-lock.yaml .npmrc ./
-RUN pnpm install --frozen-lockfile --network-concurrency 4
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --network-concurrency 4
 
 # ── Stage 2: Builder ──
 # Build the Next.js app, then prune devDeps so node_modules only
