@@ -38,9 +38,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code
 
-# Non-root user
+# Non-root user — set home explicitly so HOME=/home/app (not / which is the
+# default for --system accounts) and os.homedir() returns the right path.
 RUN groupadd --system --gid 1001 app && \
-    useradd --system --uid 1001 --gid app app
+    useradd --system --uid 1001 --gid app --home-dir /home/app app
+
+ENV HOME=/home/app
 
 # Copy standalone Next.js build
 COPY --from=builder /app/public ./public

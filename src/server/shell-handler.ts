@@ -71,6 +71,10 @@ function startShell(ws: WebSocket, cols: number, rows: number): void {
       TERM: "xterm-256color",
       COLORTERM: "truecolor",
       FORCE_COLOR: "3",
+      // Explicitly set HOME so claude CLI reads/writes to the right directory.
+      // useradd --system sets home to "/" in Debian; override here to match the
+      // mounted volume at /home/app/.claude.
+      HOME: process.env.HOME || "/home/app",
     } as Record<string, string>,
   });
 

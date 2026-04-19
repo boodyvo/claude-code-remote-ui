@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "3000:3000"
     volumes:
@@ -13,12 +14,16 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
+      # Explicit home dir — must match the volume mount and Dockerfile ENV HOME
+      - HOME=/home/app
+      # Explicit DB path inside the persistent connector-data volume
+      - DATABASE_PATH=/app/data/connector.db
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
-      interval: 10s
+      interval: 30s
       timeout: 5s
-      start_period: 180s
-      retries: 3
+      start_period: 60s
+      retries: 5
 
 volumes:
   connector-data:
