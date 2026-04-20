@@ -62,7 +62,7 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-HEALTHCHECK --interval=10s --timeout=5s --start-period=180s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
   CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
 
 CMD ["sh", "-c", "HOSTNAME=0.0.0.0 exec node server.js"]
